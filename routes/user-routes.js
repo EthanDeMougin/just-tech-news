@@ -47,11 +47,47 @@ router.post('/', (req, res) => {
     });
 });
 
+router.post('/login', (req, res) => {
+//expects {email: 'lernantino@gmail.com', password: 'password1234'}
+  User.findOne({
+    where: {
+      email: req.body.email
+    }
+  }).then(dbUserData => {
+    if (!dbUserData) {
+      res.status(400).json({message: 'No user with that email address!' });
+      return;
+    }
+    // create our User model
+    class User extends Model {
+      // set up method to run on instance data (per user) to check password
+      checkPassword(loginPw) {
+        return bcrypt.compareSync(loginPw, this.password);9
+      }
+    }
+    //add comment syntax in front of this line in the .then()
+    //res.json({ user: dbUserData });
+
+    //Verify User
+    const validPassword = dbUserData.checkPassword(req.body.password);
+
+    if (!validPassword) {
+      res.status(400).json({ message: 'Incorrect password!' });
+      return;
+    }
+    
+    res.json({ user: dbUserData, message: 'You are now logged in!' });
+  });
+//Query operation
+
+});
+
 router.put('/:id', (req, res) => {
   // expects {username: 'Lernantino', email: 'lernantino@gmail.com', password: 'password1234'}
 
   // pass in req.body instead to only update what's passed through
   User.update(req.body, {
+    indiviualHooks: true,
     where: {
       id: req.params.id
     }
@@ -87,5 +123,7 @@ router.delete('/:id', (req, res) => {
       res.status(500).json(err);
     });
 });
+
+
 
 module.exports = router;
